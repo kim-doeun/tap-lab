@@ -1,0 +1,35 @@
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: scanning.apps.tanzu.vmware.com/v1beta1
+kind: ScanPolicy
+metadata:
+  name: scan-policy
+  namespace: mduser007 # You MUST edit this and put the value of this variable. This notation doesn't work inside a YAML file
+spec:
+  regoFile: |
+    package policies
+
+    default isCompliant = false
+
+    # Accepted Values: "Critical", "High", "Medium", "Low", "Negligible", "UnknownSeverity"
+    # For the first exercise, use "UnknownSeverity", for the remediation exercise in ISEC use "Critical" (if its working)
+    violatingSeverities := ["UnknownSeverity"]
+    ignoreCVEs := []
+
+    contains(array, elem) = true {
+      array[_] = elem
+    } else = false { true }
+
+    isSafe(match) {
+      fails := contains(violatingSeverities, match.Ratings.Rating[_].Severity)
+      not fails
+    }
+
+    isSafe(match) {
+      ignore := contains(ignoreCVEs, match.Id)
+      ignore
+    }
+
+    isCompliant = isSafe(input.currentVulnerability)

@@ -1,0 +1,47 @@
+apiVersion: scanning.apps.tanzu.vmware.com/v1beta1
+kind: ScanTemplate
+metadata:
+  name: blob-source-scan-template
+  namespace: mduser007 # You MUST edit this and put the value of this variable. This notation doesn't work inside a YAML file
+spec:
+  template:
+    containers:
+    - args:
+      - -c
+      - ./source/scan-source.sh /workspace/source scan.xml
+      command:
+      - /bin/bash
+      image: registry.tanzu.vmware.com/tanzu-application-platform/tap-packages@sha256:d3a8f3cae0db15e416e805dc598223f93059c3a295cbf33f1409bc6cb9a9709c
+      imagePullPolicy: IfNotPresent
+      name: scanner
+      resources:
+        limits:
+          cpu: 1000m
+        requests:
+          cpu: 250m
+          memory: 128Mi
+      volumeMounts:
+      - mountPath: /workspace
+        name: workspace
+        readOnly: false
+    imagePullSecrets:
+    - name: scanner-secret-ref
+    initContainers:
+    - args:
+      - -c
+      - ./source/untar-gitrepository.sh $REPOSITORY /workspace
+      command:
+      - /bin/bash
+      image: registry.tanzu.vmware.com/tanzu-application-platform/tap-packages@sha256:d3a8f3cae0db15e416e805dc598223f93059c3a295cbf33f1409bc6cb9a9709c
+      imagePullPolicy: IfNotPresent
+      name: repo
+      volumeMounts:
+      - mountPath: /workspace
+        name: workspace
+        readOnly: false
+    restartPolicy: Never
+    securityContext:
+      runAsNonRoot: true
+    volumes:
+    - emptyDir: {}
+      name: workspace

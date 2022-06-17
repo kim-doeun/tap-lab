@@ -1,0 +1,46 @@
+apiVersion: scanning.apps.tanzu.vmware.com/v1beta1
+kind: ScanTemplate
+metadata:
+  name: private-image-scan-template
+  namespace: mduser007 # You MUST edit this and put the value of this variable. This notation doesn't work inside a YAML file
+spec:
+  template:
+    containers:
+    - args:
+      - -c
+      - ./image/copy-docker-config.sh /secret-data && ./image/scan-image.sh /workspace
+        scan.xml true
+      command:
+      - /bin/bash
+      image: registry.tanzu.vmware.com/tanzu-application-platform/tap-packages@sha256:d3a8f3cae0db15e416e805dc598223f93059c3a295cbf33f1409bc6cb9a9709c
+      imagePullPolicy: IfNotPresent
+      name: scanner
+      resources:
+        limits:
+          cpu: 1000m
+        requests:
+          cpu: 250m
+          memory: 128Mi
+      volumeMounts:
+      - mountPath: /.docker
+        name: docker
+        readOnly: false
+      - mountPath: /workspace
+        name: workspace
+        readOnly: false
+      - mountPath: /secret-data
+        name: registry-cred
+        readOnly: true
+    imagePullSecrets:
+    - name: scanner-secret-ref
+    restartPolicy: Never
+    securityContext:
+      runAsNonRoot: true
+    volumes:
+    - emptyDir: {}
+      name: docker
+    - emptyDir: {}
+      name: workspace
+    - name: registry-cred
+      secret:
+        secretName: tap-registry
